@@ -6,7 +6,7 @@
  * - 端末ごとに localStorage + Cookie の二重保存で記憶＆ダイヤ改正自動追従
  */
 
-const APP_VERSION = 'Ver 1.3';
+const APP_VERSION = 'Ver 1.4';
 const STORAGE_KEY = 'train_countdown_single_dir_v2';
 const LEGACY_STORAGE_KEY = 'train_countdown_data_v1';
 const COOKIE_META_KEY = 'train_countdown_meta_v2';
@@ -733,7 +733,7 @@ function renderMainCountdown(now = new Date()) {
     const updatedDate = entry.updatedAt
       ? new Date(entry.updatedAt).toLocaleDateString('ja-JP')
       : '';
-    footerText.textContent = `${entry.diaVersion || '時刻表キャッシュ済'}（最終同期: ${updatedDate}・ダイヤ改正自動追従）`;
+    footerText.textContent = `最終同期: ${updatedDate}（ダイヤ改正自動追従）`;
   }
 }
 
