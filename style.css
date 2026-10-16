@@ -2,7 +2,7 @@
   --bg-primary: #0b1120;
   --bg-card: #151f32;
   --bg-card-elevated: #1e293b;
-  --bg-header: rgba(15, 23, 42, 0.88);
+  --bg-header: rgba(15, 23, 42, 0.9);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
@@ -10,9 +10,10 @@
   --accent-green: #34d399;
   --accent-amber: #fbbf24;
   --accent-red: #f87171;
+  --accent-rose: #fb7185;
   --border-subtle: rgba(148, 163, 184, 0.16);
   --border-focus: #38bdf8;
-  --radius-lg: 16px;
+  --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
 }
@@ -33,7 +34,7 @@ html, body {
 }
 
 .app-container {
-  max-width: 680px;
+  max-width: 640px;
   margin: 0 auto;
   min-height: 100dvh;
   display: flex;
@@ -59,45 +60,44 @@ html, body {
 .header-main {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .clock-badge {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   color: var(--text-main);
   background: var(--bg-card-elevated);
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
 }
 
-.dia-selector {
+/* Auto-recognized Weekday / Weekend Badge */
+.auto-dia-badge {
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 5px 12px;
+  border-radius: 999px;
   display: inline-flex;
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
-  padding: 2px;
-  border: 1px solid var(--border-subtle);
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
 }
 
-.dia-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.auto-dia-badge.is-weekday {
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--accent-blue);
+  border-color: rgba(56, 189, 248, 0.4);
 }
 
-.dia-btn.active {
-  background: var(--accent-blue);
-  color: #090d16;
-  font-weight: 700;
+.auto-dia-badge.is-weekend {
+  background: rgba(251, 113, 133, 0.16);
+  color: var(--accent-rose);
+  border-color: rgba(251, 113, 133, 0.4);
 }
 
 .header-actions {
@@ -174,51 +174,52 @@ html, body {
 /* Main Content */
 .main-content {
   flex: 1;
-  padding: 14px 16px;
+  padding: 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-/* Station Title Banner */
+/* Station & Direction Header Card */
 .station-banner {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 2px 4px;
+  gap: 10px;
+  padding: 4px 4px;
 }
 
 .station-title {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .rail-badge {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--accent-blue);
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.3);
-  padding: 2px 10px;
+  padding: 3px 12px;
   border-radius: 999px;
 }
 
-/* Direction Card */
+/* Single Direction Main Card */
 .direction-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 22px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
   position: relative;
   overflow: hidden;
 }
@@ -233,51 +234,53 @@ html, body {
   background: var(--accent-blue);
 }
 
-.direction-card.dir-alt::before {
-  background: var(--accent-green);
-}
-
 .direction-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
   padding-left: 6px;
+  flex-wrap: wrap;
 }
 
 .direction-label {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
 }
 
 .direction-arrow {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   color: var(--accent-blue);
 }
 
-.direction-card.dir-alt .direction-arrow {
-  color: var(--accent-green);
-}
-
 .direction-name {
-  font-size: 1.3rem;
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 900;
   color: var(--text-main);
 }
 
 .direction-suffix {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   color: var(--text-muted);
 }
 
-/* Next Train Row (Primary) */
+.dia-inline-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  color: var(--text-muted);
+}
+
+/* Next Train Box (1st Train) */
 .next-train-box {
-  background: rgba(15, 23, 42, 0.65);
-  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 18px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -287,37 +290,32 @@ html, body {
 .train-step-label {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .badge-next {
   display: inline-block;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #090d16;
   background: var(--accent-blue);
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 6px;
   width: fit-content;
 }
 
-.direction-card.dir-alt .badge-next {
-  background: var(--accent-green);
-}
-
 .train-dep-meta {
-  font-size: 0.92rem;
+  font-size: 1rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .train-type-tag {
   display: inline-block;
-  font-size: 0.78rem;
-  padding: 1px 6px;
+  font-size: 0.8rem;
+  padding: 2px 7px;
   border-radius: 4px;
   background: var(--bg-card-elevated);
   color: var(--text-main);
@@ -329,17 +327,17 @@ html, body {
   font-variant-numeric: tabular-nums;
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
 }
 
 .countdown-prefix {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 .countdown-number {
-  font-size: 3.1rem;
+  font-size: 3.6rem;
   font-weight: 900;
   line-height: 1;
   color: var(--text-main);
@@ -352,7 +350,7 @@ html, body {
 
 .countdown-number.imminent {
   color: var(--accent-red);
-  font-size: 2.1rem;
+  font-size: 2.3rem;
   animation: pulse 1s ease-in-out infinite alternate;
 }
 
@@ -362,70 +360,59 @@ html, body {
 }
 
 .countdown-unit {
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: var(--text-muted);
 }
 
 .countdown-sec {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-dim);
-  min-width: 2.4em;
+  min-width: 2.5em;
   display: inline-block;
   text-align: left;
 }
 
-/* Second Train Row (After Next) */
+/* Second Train Box (2nd Train - その次の電車) */
 .after-next-box {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  background: rgba(30, 41, 59, 0.45);
+  padding: 14px 18px;
+  background: rgba(30, 41, 59, 0.55);
   border-radius: var(--radius-md);
-  border: 1px solid rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.14);
 }
 
 .after-next-left {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .badge-after {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  background: rgba(148, 163, 184, 0.15);
-  padding: 2px 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.22);
+  padding: 2px 9px;
   border-radius: 6px;
+  width: fit-content;
 }
 
 .after-next-right {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
   font-variant-numeric: tabular-nums;
 }
 
 .after-countdown-number {
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-size: 2.4rem;
+  font-weight: 900;
   color: var(--text-main);
   line-height: 1;
-}
-
-/* Third train subtle footer */
-.later-trains-row {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  padding: 0 6px;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Empty State */
@@ -467,25 +454,6 @@ html, body {
   padding: 12px 24px;
   cursor: pointer;
   margin-top: 4px;
-  transition: transform 0.1s, opacity 0.15s;
-}
-
-.cta-btn:hover {
-  opacity: 0.92;
-}
-
-/* Quick Preset Chips in Empty State */
-.quick-presets {
-  margin-top: 12px;
-  width: 100%;
-  border-top: 1px solid var(--border-subtle);
-  padding-top: 16px;
-}
-
-.quick-presets-title {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-bottom: 10px;
 }
 
 /* Dialog / Modal */
@@ -639,49 +607,64 @@ html, body {
 .route-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
-
-.route-item {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
 }
 
-.route-info {
+.route-group-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
 }
 
 .route-name {
+  font-weight: 800;
+  font-size: 0.96rem;
+  color: var(--accent-blue);
+}
+
+.direction-select-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.register-dir-btn {
+  background: var(--bg-card-elevated);
+  color: var(--text-main);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
   font-weight: 700;
-  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.route-dirs {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+.register-dir-btn:hover {
+  background: rgba(52, 211, 153, 0.15);
+  border-color: var(--accent-green);
 }
 
-.register-route-btn {
+.register-dir-btn .action-tag {
   background: var(--accent-green);
   color: #090d16;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 12px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  cursor: pointer;
+  padding: 3px 9px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 
-.register-route-btn:disabled {
+.register-dir-btn:disabled {
   opacity: 0.5;
   cursor: wait;
 }
@@ -710,8 +693,9 @@ html, body {
 }
 
 .registered-item-sub {
-  font-size: 0.78rem;
-  color: var(--text-muted);
+  font-size: 0.8rem;
+  color: var(--accent-green);
+  font-weight: 600;
 }
 
 .delete-btn {
@@ -789,9 +773,12 @@ html, body {
     display: none;
   }
   .countdown-number {
-    font-size: 2.65rem;
+    font-size: 3rem;
+  }
+  .after-countdown-number {
+    font-size: 2rem;
   }
   .direction-name {
-    font-size: 1.15rem;
+    font-size: 1.3rem;
   }
 }
