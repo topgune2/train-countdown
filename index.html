@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>つぎ何分？ - 電車カウントダウン</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="header-main">
+        <div class="clock-badge" id="currentClock" aria-live="off">--:--:--</div>
+        <div class="dia-selector" role="group" aria-label="ダイヤ種別">
+          <button type="button" class="dia-btn" data-dia="weekday" id="btnDiaWeekday">平日</button>
+          <button type="button" class="dia-btn" data-dia="saturday" id="btnDiaSaturday">土曜</button>
+          <button type="button" class="dia-btn" data-dia="holiday" id="btnDiaHoliday">日祝</button>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="btnRefreshDia" title="ネットから最新ダイヤを再取得">
+          <span class="icon-spin" id="refreshIcon">🔄</span>
+          <span class="btn-label">ダイヤ更新</span>
+        </button>
+        <button type="button" class="icon-btn primary-outline" id="btnOpenSettings" title="駅・路線の設定">
+          <span>⚙️</span>
+          <span class="btn-label">駅設定</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Registered Station Tabs (shown when multiple stations/lines are registered on this device) -->
+    <nav class="station-tabs" id="stationTabs" aria-label="登録駅切り替え" hidden></nav>
+
+    <!-- Main Content Area -->
+    <main id="mainContent" class="main-content">
+      <!-- Populated dynamically by app.js -->
+    </main>
+
+    <!-- Status / Auto-update Toast -->
+    <div id="statusToast" class="status-toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- Footer Info -->
+    <footer class="app-footer" id="appFooter">
+      <span id="diaVersionText">端末ごとに駅を記憶（キャッシュ＆Cookie保存）</span>
+    </footer>
+  </div>
+
+  <!-- Station Registration / Settings Modal (<dialog>) -->
+  <dialog id="settingsDialog" class="settings-dialog">
+    <div class="dialog-inner">
+      <header class="dialog-header">
+        <h2>駅・路線の登録（この端末用）</h2>
+        <button type="button" class="close-btn" id="btnCloseSettings" aria-label="閉じる">✕</button>
+      </header>
+
+      <div class="dialog-body">
+        <!-- Step 1: Search Station -->
+        <section class="settings-section">
+          <label for="stationSearchInput" class="section-label">1. 駅名で検索（ネットから時刻表を取得）</label>
+          <form id="stationSearchForm" class="search-form">
+            <input
+              type="search"
+              id="stationSearchInput"
+              class="search-input"
+              placeholder="例：新宿、渋谷、横浜、梅田..."
+              autocomplete="off"
+              required
+            >
+            <button type="submit" class="primary-btn" id="btnSearchStation">検索</button>
+          </form>
+          <div id="searchStatus" class="search-status" hidden></div>
+
+          <!-- Station Candidates -->
+          <div id="stationCandidatesArea" class="candidates-area" hidden>
+            <p class="sub-label">駅を選択してください：</p>
+            <div id="stationCandidatesList" class="candidates-list"></div>
+          </div>
+
+          <!-- Line & Direction Candidates -->
+          <div id="routeCandidatesArea" class="candidates-area" hidden>
+            <p class="sub-label" id="selectedStationLabel">路線を選択してください（両方向をまとめて登録します）：</p>
+            <div id="routeCandidatesList" class="route-list"></div>
+          </div>
+        </section>
+
+        <!-- Registered Stations on this device -->
+        <section class="settings-section" id="registeredListSection">
+          <div class="section-header-row">
+            <span class="section-label">この端末に登録済みの駅・路線</span>
+          </div>
+          <div id="registeredStationsList" class="registered-list"></div>
+        </section>
+
+        <!-- Manual Fallback / Backup -->
+        <details class="manual-details">
+          <summary>手動で時刻（分）を編集・追加する / バックアップ</summary>
+          <div class="manual-box">
+            <p class="help-text">
+              社内ネットワーク等で外部サイト取得がブロックされる場合、ここから直接登録やJSONバックアップが可能です。
+            </p>
+            <div class="backup-actions">
+              <button type="button" class="secondary-btn" id="btnExportData">設定を書き出し (JSON)</button>
+              <button type="button" class="secondary-btn" id="btnImportData">設定を読み込み</button>
+              <input type="file" id="importFileInput" accept=".json" hidden>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
