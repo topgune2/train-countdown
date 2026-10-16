@@ -750,17 +750,21 @@ html, body {
 
 .app-footer {
   flex: 0 0 auto;
-  padding: 6px 12px;
+  padding: 8px 14px 12px;
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-dim);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 8px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
+}
+
+#diaVersionText {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .version-pill {
@@ -768,8 +772,8 @@ html, body {
   color: var(--accent-blue);
   border: 1px solid rgba(56, 189, 248, 0.35);
   font-weight: 800;
-  font-size: 0.7rem;
-  padding: 1px 7px;
+  font-size: 0.72rem;
+  padding: 2px 8px;
   border-radius: 999px;
   flex: 0 0 auto;
 }
