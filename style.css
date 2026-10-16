@@ -2,7 +2,7 @@
   --bg-primary: #0b1120;
   --bg-card: #151f32;
   --bg-card-elevated: #1e293b;
-  --bg-header: rgba(15, 23, 42, 0.9);
+  --bg-header: rgba(15, 23, 42, 0.95);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
@@ -13,7 +13,7 @@
   --accent-rose: #fb7185;
   --border-subtle: rgba(148, 163, 184, 0.16);
   --border-focus: #38bdf8;
-  --radius-lg: 18px;
+  --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
 }
@@ -28,64 +28,65 @@ html, body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
-  line-height: 1.4;
-  min-height: 100dvh;
+  line-height: 1.3;
+  height: 100dvh;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
-  max-width: 640px;
+  max-width: 540px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 16px);
+  justify-content: space-between;
+  padding-bottom: env(safe-area-inset-bottom, 6px);
 }
 
-/* Header */
+/* Header: 1行にスッキリ収める */
 .app-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  flex: 0 0 auto;
   background: var(--bg-header);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
-  padding: 10px 16px;
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .header-main {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .clock-badge {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
   color: var(--text-main);
   background: var(--bg-card-elevated);
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  border-radius: 6px;
   border: 1px solid var(--border-subtle);
+  white-space: nowrap;
 }
 
 /* Auto-recognized Weekday / Weekend Badge */
 .auto-dia-badge {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  padding: 5px 12px;
+  padding: 4px 10px;
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .auto-dia-badge.is-weekday {
@@ -104,25 +105,23 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
 }
 
 .icon-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   background: var(--bg-card-elevated);
   color: var(--text-main);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  font-size: 0.82rem;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.icon-btn:hover {
-  background: #283548;
+  white-space: nowrap;
 }
 
 .icon-btn.primary-outline {
@@ -139,12 +138,13 @@ html, body {
   100% { transform: rotate(360deg); }
 }
 
-/* Station Tabs */
+/* Station Tabs (複数登録時のみ) */
 .station-tabs {
+  flex: 0 0 auto;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
-  padding: 10px 16px 2px;
+  padding: 6px 12px 0;
   scrollbar-width: none;
 }
 
@@ -158,8 +158,8 @@ html, body {
   color: var(--text-muted);
   border: 1px solid var(--border-subtle);
   border-radius: 999px;
-  padding: 6px 14px;
-  font-size: 0.85rem;
+  padding: 4px 12px;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -171,43 +171,52 @@ html, body {
   border-color: var(--accent-blue);
 }
 
-/* Main Content */
+/* Main Content: 1画面に収まるフレックス構成 */
 .main-content {
-  flex: 1;
-  padding: 18px 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  justify-content: center;
+  gap: 10px;
 }
 
-/* Station & Direction Header Card */
+/* Station & Line Banner */
 .station-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 4px 4px;
+  gap: 8px;
+  padding: 0 2px;
 }
 
 .station-title {
-  font-size: 1.55rem;
-  font-weight: 800;
+  font-size: 1.35rem;
+  font-weight: 900;
   letter-spacing: -0.01em;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rail-badge {
-  font-size: 0.92rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--accent-blue);
   background: rgba(56, 189, 248, 0.12);
   border: 1px solid rgba(56, 189, 248, 0.3);
-  padding: 3px 12px;
+  padding: 3px 10px;
   border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
 }
 
 /* Single Direction Main Card */
@@ -215,11 +224,11 @@ html, body {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 22px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 14px 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   position: relative;
   overflow: hidden;
 }
@@ -229,7 +238,7 @@ html, body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 6px;
+  width: 5px;
   height: 100%;
   background: var(--accent-blue);
 }
@@ -238,110 +247,137 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-left: 6px;
-  flex-wrap: wrap;
+  gap: 8px;
+  padding-left: 4px;
 }
 
 .direction-label {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
 
 .direction-arrow {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   color: var(--accent-blue);
+  flex: 0 0 auto;
 }
 
 .direction-name {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .direction-suffix {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
-.dia-inline-pill {
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.14);
-  color: var(--text-muted);
-}
-
-/* Next Train Box (1st Train) */
+/* 1本目・2本目 ボックス共通（縦積み2段構成で文字折り返しを完全防止） */
 .next-train-box {
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.28);
   border-radius: var(--radius-md);
-  padding: 18px 18px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.train-step-label {
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+.after-next-box {
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 上段：ラベル（次の電車 / その次の電車）＋ 発車時刻・種別 */
+.train-box-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+}
+
 .badge-next {
   display: inline-block;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
   color: #090d16;
   background: var(--accent-blue);
-  padding: 3px 10px;
+  padding: 2px 10px;
   border-radius: 6px;
-  width: fit-content;
+  white-space: nowrap;
+}
+
+.badge-after {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.24);
+  padding: 2px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .train-dep-meta {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .train-type-tag {
   display: inline-block;
-  font-size: 0.8rem;
-  padding: 2px 7px;
+  font-size: 0.76rem;
+  padding: 1px 7px;
   border-radius: 4px;
   background: var(--bg-card-elevated);
   color: var(--text-main);
-  margin-left: 4px;
+  white-space: nowrap;
 }
 
+/* 下段：カウントダウン数字（「あと ○ 分 ○秒」が絶対に改行されない1行表示） */
 .countdown-display {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
   display: flex;
   align-items: baseline;
-  gap: 5px;
+  justify-content: flex-end;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .countdown-prefix {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .countdown-number {
-  font-size: 3.6rem;
+  font-size: 3.4rem;
   font-weight: 900;
   line-height: 1;
   color: var(--text-main);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .countdown-number.urgent {
@@ -350,7 +386,7 @@ html, body {
 
 .countdown-number.imminent {
   color: var(--accent-red);
-  font-size: 2.3rem;
+  font-size: 2.2rem;
   animation: pulse 1s ease-in-out infinite alternate;
 }
 
@@ -360,59 +396,27 @@ html, body {
 }
 
 .countdown-unit {
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .countdown-sec {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-dim);
-  min-width: 2.5em;
-  display: inline-block;
-  text-align: left;
-}
-
-/* Second Train Box (2nd Train - その次の電車) */
-.after-next-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  background: rgba(30, 41, 59, 0.55);
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-}
-
-.after-next-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.badge-after {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--text-main);
-  background: rgba(148, 163, 184, 0.22);
-  padding: 2px 9px;
-  border-radius: 6px;
-  width: fit-content;
-}
-
-.after-next-right {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  font-variant-numeric: tabular-nums;
+  min-width: 2.6em;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .after-countdown-number {
-  font-size: 2.4rem;
+  font-size: 2.3rem;
   font-weight: 900;
   color: var(--text-main);
   line-height: 1;
+  white-space: nowrap;
 }
 
 /* Empty State */
@@ -420,46 +424,44 @@ html, body {
   background: var(--bg-card);
   border: 1px dashed rgba(56, 189, 248, 0.4);
   border-radius: var(--radius-lg);
-  padding: 32px 20px;
+  padding: 24px 18px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  margin-top: 12px;
+  gap: 12px;
 }
 
 .empty-icon {
-  font-size: 2.6rem;
+  font-size: 2.2rem;
 }
 
 .empty-state h2 {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
 .empty-state p {
   color: var(--text-muted);
-  font-size: 0.92rem;
-  max-width: 420px;
+  font-size: 0.88rem;
+  max-width: 400px;
 }
 
 .cta-btn {
   background: var(--accent-blue);
   color: #090d16;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 0.95rem;
   border: none;
   border-radius: var(--radius-md);
-  padding: 12px 24px;
+  padding: 10px 20px;
   cursor: pointer;
-  margin-top: 4px;
 }
 
 /* Dialog / Modal */
 .settings-dialog {
   margin: auto;
-  width: min(94vw, 540px);
+  width: min(94vw, 520px);
   max-height: 88dvh;
   background: var(--bg-card);
   color: var(--text-main);
@@ -484,12 +486,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .dialog-header h2 {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
 }
 
@@ -503,11 +505,11 @@ html, body {
 }
 
 .dialog-body {
-  padding: 18px 20px;
+  padding: 16px 18px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .settings-section {
@@ -517,15 +519,15 @@ html, body {
 }
 
 .section-label {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--accent-blue);
 }
 
 .sub-label {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .search-form {
@@ -553,9 +555,9 @@ html, body {
   color: #090d16;
   border: none;
   border-radius: var(--radius-sm);
-  padding: 0 18px;
+  padding: 0 16px;
   font-weight: 800;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -566,7 +568,7 @@ html, body {
 }
 
 .search-status {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   padding: 8px 12px;
   border-radius: var(--radius-sm);
   background: rgba(56, 189, 248, 0.1);
@@ -579,7 +581,7 @@ html, body {
 }
 
 .candidates-area {
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .candidates-list {
@@ -594,14 +596,10 @@ html, body {
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 8px 12px;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
-}
-
-.candidate-chip:hover {
-  border-color: var(--accent-blue);
 }
 
 .route-list {
@@ -617,12 +615,12 @@ html, body {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .route-name {
   font-weight: 800;
-  font-size: 0.96rem;
+  font-size: 0.94rem;
   color: var(--accent-blue);
 }
 
@@ -637,8 +635,8 @@ html, body {
   color: var(--text-main);
   border: 1px solid rgba(52, 211, 153, 0.4);
   border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 0.9rem;
+  padding: 10px 12px;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -646,30 +644,18 @@ html, body {
   justify-content: space-between;
   gap: 8px;
   text-align: left;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.register-dir-btn:hover {
-  background: rgba(52, 211, 153, 0.15);
-  border-color: var(--accent-green);
 }
 
 .register-dir-btn .action-tag {
   background: var(--accent-green);
   color: #090d16;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: 6px;
   white-space: nowrap;
 }
 
-.register-dir-btn:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
-
-/* Registered list */
 .registered-list {
   display: flex;
   flex-direction: column;
@@ -689,11 +675,11 @@ html, body {
 
 .registered-item-title {
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
 
 .registered-item-sub {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--accent-green);
   font-weight: 600;
 }
@@ -704,16 +690,16 @@ html, body {
   border: 1px solid rgba(248, 113, 113, 0.3);
   border-radius: 6px;
   padding: 5px 10px;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .manual-details {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   border-top: 1px solid var(--border-subtle);
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 .manual-details summary {
@@ -722,10 +708,10 @@ html, body {
 }
 
 .manual-box {
-  margin-top: 10px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .backup-actions {
@@ -740,45 +726,67 @@ html, body {
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   padding: 6px 12px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
 }
 
 /* Toast & Footer */
 .status-toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   background: #1e293b;
   color: var(--text-main);
   border: 1px solid var(--accent-blue);
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
   z-index: 50;
+  white-space: nowrap;
 }
 
 .app-footer {
-  padding: 12px 16px;
+  flex: 0 0 auto;
+  padding: 6px 12px;
   text-align: center;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .btn-label {
     display: none;
   }
+}
+
+/* 小さい画面の高さでも確実に1画面に収める調整 */
+@media (max-height: 700px) {
+  .main-content {
+    padding: 6px 12px;
+    gap: 6px;
+  }
+  .direction-card {
+    padding: 12px 14px;
+    gap: 8px;
+  }
+  .next-train-box {
+    padding: 10px 14px;
+    gap: 4px;
+  }
+  .after-next-box {
+    padding: 8px 14px;
+    gap: 2px;
+  }
   .countdown-number {
-    font-size: 3rem;
+    font-size: 2.9rem;
   }
   .after-countdown-number {
     font-size: 2rem;
-  }
-  .direction-name {
-    font-size: 1.3rem;
   }
 }
