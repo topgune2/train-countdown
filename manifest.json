@@ -1,0 +1,9 @@
+{
+  "name": "つぎ何分？ - 電車カウントダウン",
+  "short_name": "つぎ何分？",
+  "description": "登録した駅の次の電車・その次の電車まであと何分かを即座に表示するブラウザツール",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0f172a"
+}
