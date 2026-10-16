@@ -752,11 +752,26 @@ html, body {
   flex: 0 0 auto;
   padding: 6px 12px;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.version-pill {
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--accent-blue);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  font-weight: 800;
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 480px) {
