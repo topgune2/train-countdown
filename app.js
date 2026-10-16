@@ -6,6 +6,7 @@
  * - 端末ごとに localStorage + Cookie の二重保存で記憶＆ダイヤ改正自動追従
  */
 
+const APP_VERSION = 'Ver 1.3';
 const STORAGE_KEY = 'train_countdown_single_dir_v2';
 const LEGACY_STORAGE_KEY = 'train_countdown_data_v1';
 const COOKIE_META_KEY = 'train_countdown_meta_v2';
