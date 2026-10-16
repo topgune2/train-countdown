@@ -1,24 +1,27 @@
 /**
  * つぎ何分？ - 電車カウントダウン Web App
- * - 端末ごとに localStorage + Cookie の二重保存で駅・時刻表を記憶
- * - Yahoo!路線情報 (__NEXT_DATA__) から平日・土曜・日祝ダイヤを自動取得
- * - ダイヤ改正時期（または一定期間経過後）にバックグラウンドで自動更新
+ * - 今が平日か土日祝かを自動認識して明示表示
+ * - 登録のタイミングで「1つの方面」を選択して登録し、登録した方面のみを表示
+ * - 次の電車・その次の電車まであと何分かを大きく表示
+ * - 端末ごとに localStorage + Cookie の二重保存で記憶＆ダイヤ改正自動追従
  */
 
-const STORAGE_KEY = 'train_countdown_data_v1';
-const COOKIE_META_KEY = 'train_countdown_meta_v1';
+const STORAGE_KEY = 'train_countdown_single_dir_v2';
+const LEGACY_STORAGE_KEY = 'train_countdown_data_v1';
+const COOKIE_META_KEY = 'train_countdown_meta_v2';
 const AUTO_UPDATE_INTERVAL_MS = 14 * 24 * 60 * 60 * 1000; // 14日ごとに自動チェック
+
+const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
 
 // 状態管理
 const state = {
-  entries: [],          // 登録済み駅・路線リスト
+  entries: [],          // 登録済み「駅＋路線＋1方面」リスト
   activeEntryId: null,  // 現在表示中のエントリーID
-  manualDiaType: null,  // nullなら曜日・祝日から自動判定 ('weekday' | 'saturday' | 'holiday')
   isUpdating: false,
 };
 
 // ==========================================
-// 1. 日本の祝日・ダイヤ種別（平日/土曜/日祝）自動判定
+// 1. 平日 / 土日祝 の自動認識ロジック
 // ==========================================
 function isJapaneseHoliday(date) {
   const y = date.getFullYear();
@@ -28,26 +31,26 @@ function isJapaneseHoliday(date) {
 
   // 固定祝日
   const fixed = {
-    '1-1': true,   // 元日
-    '2-11': true,  // 建国記念の日
-    '2-23': true,  // 天皇誕生日
-    '4-29': true,  // 昭和の日
-    '5-3': true,   // 憲法記念日
-    '5-4': true,   // みどりの日
-    '5-5': true,   // こどもの日
-    '8-11': true,  // 山の日
-    '11-3': true,  // 文化の日
-    '11-23': true, // 勤労感謝の日
+    '1-1': '元日',
+    '2-11': '建国記念の日',
+    '2-23': '天皇誕生日',
+    '4-29': '昭和の日',
+    '5-3': '憲法記念日',
+    '5-4': 'みどりの日',
+    '5-5': 'こどもの日',
+    '8-11': '山の日',
+    '11-3': '文化の日',
+    '11-23': '勤労感謝の日',
   };
   if (fixed[`${m}-${d}`]) return true;
 
-  // 春分の日・秋分の日（近似式 2000-2099）
+  // 春分の日・秋分の日（2000-2099）
   const vernal = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
   const autumnal = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
   if (m === 3 && d === vernal) return true;
   if (m === 9 && d === autumnal) return true;
 
-  // ハッピーマンデー（第n月曜日）
+  // ハッピーマンデー
   const nthMonday = Math.ceil(d / 7);
   if (w === 1) {
     if (m === 1 && nthMonday === 2) return true;  // 成人の日
@@ -59,31 +62,45 @@ function isJapaneseHoliday(date) {
   return false;
 }
 
-function getServiceDate(now) {
-  // 鉄道の営業日は午前3時切り替え（0:00〜2:59は前日ダイヤの24時〜26時扱い）
-  const serviceDate = new Date(now);
-  if (now.getHours() < 3) {
-    serviceDate.setDate(serviceDate.getDate() - 1);
-  }
-  return serviceDate;
-}
+/**
+ * 指定された日付が 'weekday' | 'saturday' | 'holiday' のどれかを自動判定
+ */
+function detectCalendarDiaInfo(date) {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const day = date.getDay();
+  const dayStr = DAY_NAMES[day];
 
-function detectDiaType(date) {
-  const serviceDate = getServiceDate(date);
-  const day = serviceDate.getDay();
-  if (day === 0 || isJapaneseHoliday(serviceDate)) return 'holiday';
-  // 振替休日チェック（前日が日曜かつ祝日の場合）
-  if (day === 1) {
-    const yesterday = new Date(serviceDate);
+  // 日曜または祝日・振替休日
+  let isHoliday = day === 0 || isJapaneseHoliday(date);
+  if (!isHoliday && day === 1) {
+    const yesterday = new Date(date);
     yesterday.setDate(yesterday.getDate() - 1);
-    if (isJapaneseHoliday(yesterday)) return 'holiday';
+    if (isJapaneseHoliday(yesterday)) isHoliday = true;
   }
-  if (day === 6) return 'saturday';
-  return 'weekday';
-}
 
-function getActiveDiaType(now = new Date()) {
-  return state.manualDiaType || detectDiaType(now);
+  if (isHoliday) {
+    return {
+      diaKey: 'holiday',
+      isWeekend: true,
+      shortLabel: '土日祝（休日ダイヤ）',
+      fullBadgeText: `${m}/${d}(${dayStr}) 土日祝ダイヤ`,
+    };
+  }
+  if (day === 6) {
+    return {
+      diaKey: 'saturday',
+      isWeekend: true,
+      shortLabel: '土日（土曜ダイヤ）',
+      fullBadgeText: `${m}/${d}(${dayStr}) 土日ダイヤ`,
+    };
+  }
+  return {
+    diaKey: 'weekday',
+    isWeekend: false,
+    shortLabel: '平日ダイヤ',
+    fullBadgeText: `${m}/${d}(${dayStr}) 平日ダイヤ`,
+  };
 }
 
 // ==========================================
@@ -115,10 +132,8 @@ function saveState() {
         stationId: e.stationId,
         stationName: e.stationName,
         railName: e.railName,
-        directions: e.directions.map((d) => ({
-          groupId: d.groupId,
-          directionName: d.directionName,
-        })),
+        groupId: e.groupId,
+        directionName: e.directionName,
       })),
     };
     setCookie(COOKIE_META_KEY, JSON.stringify(meta));
@@ -139,20 +154,52 @@ async function loadState() {
       }
     }
 
+    // 旧バージョン(両方向保存)のデータがあれば、1方面ずつのエントリーに自動変換
+    const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw);
+      if (Array.isArray(legacy.entries) && legacy.entries.length > 0) {
+        const migrated = [];
+        for (const oldEntry of legacy.entries) {
+          for (const dir of oldEntry.directions || []) {
+            migrated.push({
+              id: `${oldEntry.stationId}_${dir.groupId}`,
+              stationId: oldEntry.stationId,
+              stationName: oldEntry.stationName,
+              railName: oldEntry.railName,
+              groupId: dir.groupId,
+              directionName: dir.directionName,
+              timetables: dir.timetables,
+              updatedAt: oldEntry.updatedAt || Date.now(),
+              diaVersion: oldEntry.diaVersion || '',
+            });
+          }
+        }
+        if (migrated.length > 0) {
+          state.entries = [migrated[0]]; // 最初の1方面のみを有効化
+          state.activeEntryId = migrated[0].id;
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+          saveState();
+          return;
+        }
+      }
+    }
+
     // localStorageが空でもCookieにメタ情報が残っていれば自動復元
     const cookieRaw = getCookie(COOKIE_META_KEY);
     if (cookieRaw) {
       const meta = JSON.parse(cookieRaw);
       if (Array.isArray(meta.entries) && meta.entries.length > 0) {
-        showToast('Cookieから登録駅を復元し、時刻表を再取得しています...');
+        showToast('Cookieから登録済みの駅・方面を復元しています...');
         for (const item of meta.entries) {
-          if (item.stationId && item.directions?.length) {
+          if (item.stationId && item.groupId) {
             try {
-              const entry = await fetchCompleteStationEntry(
+              const entry = await fetchSingleDirectionEntry(
                 item.stationId,
                 item.stationName,
                 item.railName,
-                item.directions
+                item.groupId,
+                item.directionName
               );
               state.entries.push(entry);
             } catch (e) {
@@ -175,7 +222,6 @@ async function loadState() {
 // 3. ネットからの時刻表取得 (Yahoo!路線情報 __NEXT_DATA__)
 // ==========================================
 async function fetchYahooNextData(targetUrl) {
-  // 高速な Jina Reader (direct HTML mode) を第一優先、フォールバックも用意
   const attempts = [
     async () => {
       const res = await fetch(`https://r.jina.ai/${targetUrl}`, {
@@ -223,7 +269,6 @@ async function searchStationByName(query) {
   const url = `https://transit.yahoo.co.jp/timetable/search?q=${encodeURIComponent(query.trim())}`;
   const nextData = await fetchYahooNextData(url);
 
-  // 1駅に絞られて直接 `/timetable/[stationId]` が返ってきた場合
   if (nextData.page === '/timetable/[stationId]') {
     const stationId = nextData.query?.stationId;
     const detail = nextData.props?.pageProps?.directionDetail;
@@ -237,7 +282,6 @@ async function searchStationByName(query) {
     };
   }
 
-  // 複数駅の候補がある場合
   const features = nextData.props?.pageProps?.stationFeatures || [];
   const seen = new Set();
   const candidates = [];
@@ -261,14 +305,13 @@ async function searchStationByName(query) {
 }
 
 /**
- * 路線一覧の正規化（山手線外回り・内回りなど同名路線を1つにまとめる）
+ * 路線一覧の正規化（各路線の方面リストを整理）
  */
 function normalizeRouteInfos(routeInfos) {
   const groupedMap = new Map();
 
   for (const info of routeInfos) {
     const rawName = info.railName || '';
-    // 「外回り」「内回り」が路線名末尾についている場合は統合して両方向を1路線として扱う
     const baseName = rawName.replace(/(外回り|内回り)$/, '');
     if (!groupedMap.has(baseName)) {
       groupedMap.set(baseName, {
@@ -304,16 +347,15 @@ async function fetchStationRoutes(stationId) {
 }
 
 /**
- * 1つの方面 (stationId + groupId) の平日(1)・土曜(2)・日祝(4) の全時刻表を取得
+ * 選択された「1つの方面 (stationId + groupId)」のみの平日(1)・土曜(2)・日祝(4) の時刻表を取得
  */
-async function fetchDirectionTimetables(stationId, groupId, fallbackDirName) {
+async function fetchSingleDirectionEntry(stationId, stationName, railName, groupId, directionName) {
   const kinds = [
     { key: 'weekday', code: 1 },
     { key: 'saturday', code: 2 },
     { key: 'holiday', code: 4 },
   ];
 
-  // 並列で平日・土曜・日祝の時刻表を取得
   const results = await Promise.all(
     kinds.map(async ({ key, code }) => {
       const url = `https://transit.yahoo.co.jp/timetable/${stationId}/${groupId}?kind=${code}`;
@@ -329,21 +371,19 @@ async function fetchDirectionTimetables(stationId, groupId, fallbackDirName) {
           const minute = parseInt(mObj.minute, 10);
           if (isNaN(minute)) continue;
           trains.push({
-            h: hour, // 4〜25 (24時以降は 24, 25 として格納されている)
+            h: hour,
             m: minute,
             type: mObj.trainName || '普通',
-            first: mObj.firstStation === 'true',
           });
         }
       }
 
-      // 発車順にソート（4時〜25時）
       trains.sort((a, b) => a.h * 60 + a.m - (b.h * 60 + b.m));
 
       return {
         key,
         trains,
-        directionName: item?.directionName ? `${item.directionName}方面` : fallbackDirName,
+        directionName: item?.directionName ? `${item.directionName}方面` : directionName,
         kousyou,
       };
     })
@@ -354,48 +394,25 @@ async function fetchDirectionTimetables(stationId, groupId, fallbackDirName) {
     saturday: [],
     holiday: [],
   };
-  let resolvedDirName = fallbackDirName;
+  let resolvedDirName = directionName;
   let kousyouText = '';
 
   for (const r of results) {
     timetables[r.key] = r.trains;
-    if (r.directionName) resolvedDirName = r.directionName;
+    if (!resolvedDirName && r.directionName) resolvedDirName = r.directionName;
     if (r.kousyou) kousyouText = r.kousyou;
   }
 
   return {
-    groupId,
-    directionName: fallbackDirName || resolvedDirName,
-    timetables,
-    kousyouText,
-  };
-}
-
-/**
- * 駅＋路線の全方向の時刻表を取得してエントリーオブジェクトを生成
- */
-async function fetchCompleteStationEntry(stationId, stationName, railName, directionsMeta) {
-  const dirResults = [];
-  let diaVersion = '';
-
-  for (const dir of directionsMeta) {
-    const dData = await fetchDirectionTimetables(stationId, dir.groupId, dir.directionName);
-    if (dData.kousyouText) diaVersion = dData.kousyouText;
-    dirResults.push({
-      groupId: dData.groupId,
-      directionName: dir.directionName || dData.directionName,
-      timetables: dData.timetables,
-    });
-  }
-
-  return {
-    id: `${stationId}_${directionsMeta.map((d) => d.groupId).join('-')}`,
+    id: `${stationId}_${groupId}`,
     stationId,
     stationName,
     railName,
-    directions: dirResults,
+    groupId,
+    directionName: resolvedDirName,
+    timetables,
     updatedAt: Date.now(),
-    diaVersion: diaVersion || `${new Date().getFullYear()}年${new Date().getMonth() + 1}月取得`,
+    diaVersion: kousyouText || `${new Date().getFullYear()}年${new Date().getMonth() + 1}月取得`,
   };
 }
 
@@ -407,7 +424,6 @@ function needsDiaAutoUpdate(entry) {
   const now = new Date();
   const last = new Date(entry.updatedAt);
 
-  // 14日以上経過していたら自動更新
   if (now.getTime() - last.getTime() > AUTO_UPDATE_INTERVAL_MS) {
     return true;
   }
@@ -430,14 +446,17 @@ async function refreshActiveEntryTimetable(isSilent = false) {
   state.isUpdating = true;
   const icon = document.getElementById('refreshIcon');
   if (icon) icon.classList.add('spinning');
-  if (!isSilent) showToast(`「${entry.stationName}駅（${entry.railName}）」の最新ダイヤを取得中...`);
+  if (!isSilent) {
+    showToast(`「${entry.stationName}駅（${entry.directionName}）」の最新ダイヤを取得中...`);
+  }
 
   try {
-    const updated = await fetchCompleteStationEntry(
+    const updated = await fetchSingleDirectionEntry(
       entry.stationId,
       entry.stationName,
       entry.railName,
-      entry.directions.map((d) => ({ groupId: d.groupId, directionName: d.directionName }))
+      entry.groupId,
+      entry.directionName
     );
 
     const idx = state.entries.findIndex((e) => e.id === entry.id);
@@ -461,57 +480,72 @@ async function refreshActiveEntryTimetable(isSilent = false) {
 // ==========================================
 // 5. 次の電車・その次の電車のカウントダウン計算
 // ==========================================
-function getUpcomingTrains(directionObj, now = new Date()) {
-  const diaType = getActiveDiaType(now);
-  const list = directionObj.timetables?.[diaType] || [];
-  if (list.length === 0) return [];
-
+function getNextTwoTrains(entry, now = new Date()) {
   const curH = now.getHours();
   const curM = now.getMinutes();
   const curS = now.getSeconds();
-
-  // 鉄道時刻換算（0:00〜2:59は 24:00〜26:59 として計算）
-  const serviceHour = curH < 3 ? curH + 24 : curH;
-  const nowTotalSeconds = (serviceHour * 60 + curM) * 60 + curS;
-
   const upcoming = [];
 
-  for (const t of list) {
-    const depTotalSeconds = (t.h * 60 + t.m) * 60;
-    const diffSeconds = depTotalSeconds - nowTotalSeconds;
+  // 深夜 0:00〜2:59 の場合、まず前日深夜枠(24時〜26時)の残りの電車をチェック
+  if (curH < 3) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yDia = detectCalendarDiaInfo(yesterday);
+    const yList = entry.timetables?.[yDia.diaKey] || [];
+    const lateNowSeconds = ((curH + 24) * 60 + curM) * 60 + curS;
 
+    for (const t of yList) {
+      if (t.h < 24) continue;
+      const depSeconds = (t.h * 60 + t.m) * 60;
+      const diffSeconds = depSeconds - lateNowSeconds;
+      if (diffSeconds >= -15) {
+        upcoming.push({
+          ...t,
+          diffSeconds: Math.max(0, diffSeconds),
+          diffMinutes: Math.ceil(Math.max(0, diffSeconds) / 60),
+          labelNote: '',
+        });
+        if (upcoming.length >= 2) return upcoming;
+      }
+    }
+  }
+
+  // 当日（0:00〜2:59で深夜便が終わった後は当日の朝始発以降）のダイヤをチェック
+  const todayDia = detectCalendarDiaInfo(now);
+  const todayList = entry.timetables?.[todayDia.diaKey] || [];
+  const todayNowSeconds = (curH * 60 + curM) * 60 + curS;
+
+  for (const t of todayList) {
+    const depSeconds = (t.h * 60 + t.m) * 60;
+    const diffSeconds = depSeconds - todayNowSeconds;
     if (diffSeconds >= -15) {
-      // 発車直後15秒以内〜これからの電車
       upcoming.push({
         ...t,
         diffSeconds: Math.max(0, diffSeconds),
         diffMinutes: Math.ceil(Math.max(0, diffSeconds) / 60),
-        isTomorrowFirst: false,
+        labelNote: curH < 3 && t.h < 12 ? '（始発）' : '',
       });
-      if (upcoming.length >= 3) break;
+      if (upcoming.length >= 2) return upcoming;
     }
   }
 
-  // 終電後の場合、翌朝の始発・2番電車を表示する
-  if (upcoming.length < 2 && list.length > 0) {
-    // 翌日のダイヤ種別を判定
+  // 23時以降などで当日分が残り1本以下なら、翌朝の始発以降を補完
+  if (upcoming.length < 2) {
     const tomorrow = new Date(now);
-    if (curH >= 3) tomorrow.setDate(tomorrow.getDate() + 1);
-    const nextDiaType = state.manualDiaType || detectDiaType(tomorrow);
-    const nextList = directionObj.timetables?.[nextDiaType] || list;
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomDia = detectCalendarDiaInfo(tomorrow);
+    const tomList = entry.timetables?.[tomDia.diaKey] || [];
 
-    for (const t of nextList) {
-      if (upcoming.length >= 3) break;
-      // 翌朝の時刻は +24時間 (または curH < 3 なら当日朝の時刻)
-      const targetHour = curH < 3 ? t.h : t.h + 24;
-      const depTotalSeconds = (targetHour * 60 + t.m) * 60;
-      const diffSeconds = depTotalSeconds - nowTotalSeconds;
+    for (const t of tomList) {
+      if (upcoming.length >= 2) break;
+      const depSeconds = ((t.h + 24) * 60 + t.m) * 60;
+      const diffSeconds = depSeconds - todayNowSeconds;
       if (diffSeconds > 0) {
         upcoming.push({
           ...t,
           diffSeconds,
           diffMinutes: Math.ceil(diffSeconds / 60),
-          isTomorrowFirst: true,
+          labelNote: '（翌朝）',
         });
       }
     }
@@ -542,10 +576,14 @@ function renderHeader(now = new Date()) {
     clockEl.textContent = `${hh}:${mm}:${ss}`;
   }
 
-  const activeDia = getActiveDiaType(now);
-  document.querySelectorAll('.dia-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.dia === activeDia);
-  });
+  // 今日が平日か土日祝かを自動認識してバッジ表示
+  const diaBadge = document.getElementById('autoDiaBadge');
+  if (diaBadge) {
+    const diaInfo = detectCalendarDiaInfo(now);
+    diaBadge.textContent = `📅 ${diaInfo.fullBadgeText}`;
+    diaBadge.classList.toggle('is-weekend', diaInfo.isWeekend);
+    diaBadge.classList.toggle('is-weekday', !diaInfo.isWeekend);
+  }
 }
 
 function renderTabs() {
@@ -563,7 +601,7 @@ function renderTabs() {
     .map((entry) => {
       const isActive = entry.id === state.activeEntryId;
       return `<button type="button" class="station-tab ${isActive ? 'active' : ''}" data-entry-id="${escapeHtml(entry.id)}">
-        ${escapeHtml(entry.stationName)}（${escapeHtml(entry.railName)}）
+        ${escapeHtml(entry.stationName)}（${escapeHtml(entry.directionName)}）
       </button>`;
     })
     .join('');
@@ -587,120 +625,87 @@ function renderMainCountdown(now = new Date()) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">🚉</div>
-        <h2>この端末で表示する駅を登録してください</h2>
+        <h2>この端末で表示する「駅」と「方面」を登録してください</h2>
         <p>
-          一度登録するとブラウザ（キャッシュ＆Cookie）に記憶され、次回からはリンクを開くだけで<strong>「どっち方向か」「次の電車・その次の電車まであと何分か」</strong>が即座に表示されます。
+          登録時に<strong>駅と乗る方面（方向）</strong>を選ぶだけでブラウザに記憶され、次回からはリンクを開いた瞬間に<strong>登録した方面の「次の電車」「その次の電車」まであと何分か</strong>だけが表示されます。
         </p>
-        <button type="button" class="cta-btn" id="btnEmptyAddStation">＋ 駅を検索して登録する</button>
+        <button type="button" class="cta-btn" id="btnEmptyAddStation">＋ 駅・方面を登録する</button>
       </div>
     `;
     document.getElementById('btnEmptyAddStation')?.addEventListener('click', openSettingsDialog);
-    if (footerText) footerText.textContent = '未登録 — 端末ごとに異なる駅を登録できます';
+    if (footerText) footerText.textContent = '未登録 — 端末ごとに異なる駅・方面を登録できます';
     return;
   }
 
-  const cardsHtml = entry.directions
-    .map((dir, idx) => {
-      const upcoming = getUpcomingTrains(dir, now);
-      const first = upcoming[0];
-      const second = upcoming[1];
-      const third = upcoming[2];
+  const diaInfo = detectCalendarDiaInfo(now);
+  const upcoming = getNextTwoTrains(entry, now);
+  const first = upcoming[0];
+  const second = upcoming[1];
+  const cleanDirName = (entry.directionName || '').replace(/方面$/, '');
 
-      const altClass = idx % 2 === 1 ? 'dir-alt' : '';
-      const cleanDirName = dir.directionName.replace(/方面$/, '');
+  // 1本目（次の電車）
+  let firstHtml = '';
+  if (!first) {
+    firstHtml = `
+      <div class="next-train-box">
+        <div class="train-step-label">
+          <span class="badge-next">次の電車</span>
+          <span class="train-dep-meta">時刻表データがありません</span>
+        </div>
+        <div class="countdown-display">
+          <span class="countdown-number">--</span>
+        </div>
+      </div>
+    `;
+  } else {
+    const isImminent = first.diffSeconds < 60;
+    const isUrgent = first.diffMinutes <= 3 && !isImminent;
+    const remSec = first.diffSeconds % 60;
 
-      // 1本目（次の電車）
-      let firstHtml = '';
-      if (!first) {
-        firstHtml = `
-          <div class="next-train-box">
-            <div class="train-step-label">
-              <span class="badge-next">次の電車</span>
-              <span class="train-dep-meta">本日の運転は終了しました</span>
-            </div>
-            <div class="countdown-display">
-              <span class="countdown-number">--</span>
-            </div>
+    firstHtml = `
+      <div class="next-train-box">
+        <div class="train-step-label">
+          <span class="badge-next">次の電車${escapeHtml(first.labelNote || '')}</span>
+          <div class="train-dep-meta">
+            ${formatDisplayTime(first.h, first.m)}発
+            <span class="train-type-tag">${escapeHtml(first.type)}</span>
           </div>
-        `;
-      } else {
-        const isImminent = first.diffSeconds < 60;
-        const isUrgent = first.diffMinutes <= 3 && !isImminent;
-        const remSec = first.diffSeconds % 60;
-        const tomorrowLabel = first.isTomorrowFirst ? '（翌朝始発）' : '';
+        </div>
+        <div class="countdown-display">
+          ${
+            isImminent
+              ? `<span class="countdown-number imminent">まもなく</span>
+                 <span class="countdown-sec">(${first.diffSeconds}秒)</span>`
+              : `<span class="countdown-prefix">あと</span>
+                 <span class="countdown-number ${isUrgent ? 'urgent' : ''}">${first.diffMinutes}</span>
+                 <span class="countdown-unit">分</span>
+                 <span class="countdown-sec">${String(remSec).padStart(2, '0')}秒</span>`
+          }
+        </div>
+      </div>
+    `;
+  }
 
-        firstHtml = `
-          <div class="next-train-box">
-            <div class="train-step-label">
-              <span class="badge-next">次の電車 ${tomorrowLabel}</span>
-              <div class="train-dep-meta">
-                ${formatDisplayTime(first.h, first.m)}発
-                <span class="train-type-tag">${escapeHtml(first.type)}</span>
-              </div>
-            </div>
-            <div class="countdown-display">
-              ${
-                isImminent
-                  ? `<span class="countdown-number imminent">まもなく</span>
-                     <span class="countdown-sec">(${first.diffSeconds}秒)</span>`
-                  : `<span class="countdown-prefix">あと</span>
-                     <span class="countdown-number ${isUrgent ? 'urgent' : ''}">${first.diffMinutes}</span>
-                     <span class="countdown-unit">分</span>
-                     <span class="countdown-sec">${String(remSec).padStart(2, '0')}秒</span>`
-              }
-            </div>
-          </div>
-        `;
-      }
-
-      // 2本目（その次の電車）
-      let secondHtml = '';
-      if (second) {
-        const tomorrowLabel2 = second.isTomorrowFirst ? '（翌朝）' : '';
-        secondHtml = `
-          <div class="after-next-box">
-            <div class="after-next-left">
-              <span class="badge-after">その次${tomorrowLabel2}</span>
-              <span class="train-dep-meta">
-                ${formatDisplayTime(second.h, second.m)}発
-                <span class="train-type-tag">${escapeHtml(second.type)}</span>
-              </span>
-            </div>
-            <div class="after-next-right">
-              <span class="countdown-prefix">あと</span>
-              <span class="after-countdown-number">${second.diffMinutes}</span>
-              <span class="countdown-unit">分</span>
-            </div>
-          </div>
-        `;
-      }
-
-      // 3本目（控えめな補足表示）
-      let thirdHtml = '';
-      if (third) {
-        thirdHtml = `
-          <div class="later-trains-row">
-            <span>さらに次: ${formatDisplayTime(third.h, third.m)}発（${third.diffMinutes}分後 / ${escapeHtml(third.type)}）</span>
-          </div>
-        `;
-      }
-
-      return `
-        <article class="direction-card ${altClass}">
-          <div class="direction-header">
-            <div class="direction-label">
-              <span class="direction-arrow">➔</span>
-              <span class="direction-name">${escapeHtml(cleanDirName)}</span>
-              <span class="direction-suffix">方面</span>
-            </div>
-          </div>
-          ${firstHtml}
-          ${secondHtml}
-          ${thirdHtml}
-        </article>
-      `;
-    })
-    .join('');
+  // 2本目（その次の電車）
+  let secondHtml = '';
+  if (second) {
+    secondHtml = `
+      <div class="after-next-box">
+        <div class="after-next-left">
+          <span class="badge-after">その次の電車${escapeHtml(second.labelNote || '')}</span>
+          <span class="train-dep-meta">
+            ${formatDisplayTime(second.h, second.m)}発
+            <span class="train-type-tag">${escapeHtml(second.type)}</span>
+          </span>
+        </div>
+        <div class="after-next-right">
+          <span class="countdown-prefix">あと</span>
+          <span class="after-countdown-number">${second.diffMinutes}</span>
+          <span class="countdown-unit">分</span>
+        </div>
+      </div>
+    `;
+  }
 
   container.innerHTML = `
     <div class="station-banner">
@@ -709,7 +714,19 @@ function renderMainCountdown(now = new Date()) {
         <span class="rail-badge">${escapeHtml(entry.railName)}</span>
       </h1>
     </div>
-    ${cardsHtml}
+
+    <article class="direction-card">
+      <div class="direction-header">
+        <div class="direction-label">
+          <span class="direction-arrow">➔</span>
+          <span class="direction-name">${escapeHtml(cleanDirName)}</span>
+          <span class="direction-suffix">方面</span>
+        </div>
+        <span class="dia-inline-pill">${escapeHtml(diaInfo.shortLabel)}（自動認識）</span>
+      </div>
+      ${firstHtml}
+      ${secondHtml}
+    </article>
   `;
 
   if (footerText) {
@@ -725,18 +742,17 @@ function renderRegisteredListInDialog() {
   if (!listEl) return;
 
   if (state.entries.length === 0) {
-    listEl.innerHTML = `<p class="sub-label">まだ登録されている駅はありません。</p>`;
+    listEl.innerHTML = `<p class="sub-label">まだ登録されている駅・方面はありません。</p>`;
     return;
   }
 
   listEl.innerHTML = state.entries
     .map((entry) => {
-      const dirsText = entry.directions.map((d) => d.directionName).join(' / ');
       return `
         <div class="registered-item">
           <div>
             <div class="registered-item-title">${escapeHtml(entry.stationName)}駅 — ${escapeHtml(entry.railName)}</div>
-            <div class="registered-item-sub">${escapeHtml(dirsText)}</div>
+            <div class="registered-item-sub">➔ ${escapeHtml(entry.directionName)}</div>
           </div>
           <button type="button" class="delete-btn" data-delete-id="${escapeHtml(entry.id)}">削除</button>
         </div>
@@ -766,7 +782,7 @@ function renderAll() {
 }
 
 // ==========================================
-// 7. 駅検索・登録モーダル操作
+// 7. 駅検索・方面選択モーダル操作
 // ==========================================
 function openSettingsDialog() {
   const dialog = document.getElementById('settingsDialog');
@@ -794,6 +810,9 @@ function setSearchStatus(message, isError = false) {
   el.classList.toggle('error', isError);
 }
 
+/**
+ * 登録タイミングで「どの方面か」を1つ選んで登録するUI
+ */
 function renderRouteSelection(stationId, stationName, routes) {
   const area = document.getElementById('routeCandidatesArea');
   const label = document.getElementById('selectedStationLabel');
@@ -801,7 +820,7 @@ function renderRouteSelection(stationId, stationName, routes) {
   if (!area || !list) return;
 
   if (label) {
-    label.textContent = `2. 「${stationName}駅」の路線を選択してください（両方向の時刻表を自動取得します）：`;
+    label.textContent = `2. 「${stationName}駅」で表示したい方面を選んで登録してください：`;
   }
 
   if (!routes.length) {
@@ -811,17 +830,29 @@ function renderRouteSelection(stationId, stationName, routes) {
   }
 
   list.innerHTML = routes
-    .map((r, idx) => {
-      const dirNames = r.directions.map((d) => d.directionName).join(' ／ ');
-      return `
-        <div class="route-item">
-          <div class="route-info">
-            <span class="route-name">${escapeHtml(r.railName)}</span>
-            <span class="route-dirs">${escapeHtml(dirNames)}</span>
-          </div>
-          <button type="button" class="register-route-btn" data-route-idx="${idx}">
-            この路線を登録
+    .map((r, rIdx) => {
+      const dirBtnsHtml = r.directions
+        .map(
+          (d, dIdx) => `
+          <button
+            type="button"
+            class="register-dir-btn"
+            data-route-idx="${rIdx}"
+            data-dir-idx="${dIdx}"
+          >
+            <span>➔ ${escapeHtml(d.directionName)}</span>
+            <span class="action-tag">この方面を登録</span>
           </button>
+        `
+        )
+        .join('');
+
+      return `
+        <div class="route-group-card">
+          <div class="route-name">${escapeHtml(r.railName)}</div>
+          <div class="direction-select-buttons">
+            ${dirBtnsHtml}
+          </div>
         </div>
       `;
     })
@@ -829,29 +860,35 @@ function renderRouteSelection(stationId, stationName, routes) {
 
   area.hidden = false;
 
-  list.querySelectorAll('.register-route-btn').forEach((btn) => {
+  list.querySelectorAll('.register-dir-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const route = routes[Number(btn.dataset.routeIdx)];
-      if (!route) return;
+      const dir = route?.directions?.[Number(btn.dataset.dirIdx)];
+      if (!route || !dir) return;
 
       btn.disabled = true;
-      btn.textContent = '取得中...';
-      setSearchStatus(`「${stationName}駅（${route.railName}）」の平日・土曜・日祝ダイヤを取得しています（約2〜4秒）...`);
+      const tagEl = btn.querySelector('.action-tag');
+      if (tagEl) tagEl.textContent = '取得中...';
+      setSearchStatus(
+        `「${stationName}駅（${route.railName}・${dir.directionName}）」の時刻表を取得しています（約2秒）...`
+      );
 
       try {
-        const newEntry = await fetchCompleteStationEntry(
+        const newEntry = await fetchSingleDirectionEntry(
           stationId,
           stationName,
           route.railName,
-          route.directions
+          dir.groupId,
+          dir.directionName
         );
 
-        // 既存エントリーがあれば上書き、なければ追加
+        // この端末で1駅1方面をシンプルに表示するため、同じIDがあれば上書き、または先頭に設定
         const existingIdx = state.entries.findIndex((e) => e.id === newEntry.id);
         if (existingIdx !== -1) {
           state.entries[existingIdx] = newEntry;
         } else {
-          state.entries.push(newEntry);
+          // 既に登録がある場合は上書き登録（複数タブを増やさず選んだ1方面のみを即表示）
+          state.entries = [newEntry];
         }
 
         state.activeEntryId = newEntry.id;
@@ -859,13 +896,13 @@ function renderRouteSelection(stationId, stationName, routes) {
         renderAll();
         renderRegisteredListInDialog();
         setSearchStatus('');
-        showToast(`「${stationName}駅（${route.railName}）」をこの端末に登録しました！`);
+        showToast(`「${stationName}駅（${dir.directionName}）」を登録しました！`);
         closeSettingsDialog();
       } catch (err) {
         console.error(err);
         setSearchStatus('時刻表の取得に失敗しました。もう一度お試しください。', true);
         btn.disabled = false;
-        btn.textContent = 'この路線を登録';
+        if (tagEl) tagEl.textContent = 'この方面を登録';
       }
     });
   });
@@ -895,16 +932,6 @@ function showToast(msg, duration = 3200) {
 }
 
 function setupEventListeners() {
-  // ダイヤ切り替えボタン
-  document.querySelectorAll('.dia-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const selected = btn.dataset.dia;
-      const autoDetected = detectDiaType(new Date());
-      state.manualDiaType = selected === autoDetected ? null : selected;
-      renderAll();
-    });
-  });
-
   // ダイヤ手動更新ボタン
   document.getElementById('btnRefreshDia')?.addEventListener('click', () => {
     if (!state.entries.length) {
@@ -966,7 +993,7 @@ function setupEventListeners() {
             chip.addEventListener('click', async () => {
               const stId = chip.dataset.stId;
               const stName = chip.dataset.stName;
-              setSearchStatus(`「${stName}駅」の路線一覧を取得中...`);
+              setSearchStatus(`「${stName}駅」の路線・方面一覧を取得中...`);
               try {
                 const stRoutes = await fetchStationRoutes(stId);
                 setSearchStatus('');
@@ -1023,7 +1050,6 @@ function setupEventListeners() {
     }
   });
 
-  // スマホのスリープ復帰時やタブ切り替え時に即座に再計算
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       renderAll();
@@ -1039,18 +1065,15 @@ async function initApp() {
   await loadState();
   renderAll();
 
-  // 初回アクセスで未登録なら自動で設定モーダルを開く
   if (state.entries.length === 0) {
     openSettingsDialog();
   } else {
-    // ダイヤ改正時期または前回取得から14日経過していれば裏側で自動更新
     const active = getActiveEntry();
     if (needsDiaAutoUpdate(active)) {
       refreshActiveEntryTimetable(true);
     }
   }
 
-  // 毎秒カウントダウンを更新
   setInterval(() => {
     const now = new Date();
     renderHeader(now);
