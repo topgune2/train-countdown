@@ -648,7 +648,7 @@ function renderMainCountdown(now = new Date()) {
   if (!first) {
     firstHtml = `
       <div class="next-train-box">
-        <div class="train-step-label">
+        <div class="train-box-top">
           <span class="badge-next">次の電車</span>
           <span class="train-dep-meta">時刻表データがありません</span>
         </div>
@@ -664,10 +664,10 @@ function renderMainCountdown(now = new Date()) {
 
     firstHtml = `
       <div class="next-train-box">
-        <div class="train-step-label">
+        <div class="train-box-top">
           <span class="badge-next">次の電車${escapeHtml(first.labelNote || '')}</span>
           <div class="train-dep-meta">
-            ${formatDisplayTime(first.h, first.m)}発
+            <span>${formatDisplayTime(first.h, first.m)}発</span>
             <span class="train-type-tag">${escapeHtml(first.type)}</span>
           </div>
         </div>
@@ -691,14 +691,14 @@ function renderMainCountdown(now = new Date()) {
   if (second) {
     secondHtml = `
       <div class="after-next-box">
-        <div class="after-next-left">
+        <div class="train-box-top">
           <span class="badge-after">その次の電車${escapeHtml(second.labelNote || '')}</span>
-          <span class="train-dep-meta">
-            ${formatDisplayTime(second.h, second.m)}発
+          <div class="train-dep-meta">
+            <span>${formatDisplayTime(second.h, second.m)}発</span>
             <span class="train-type-tag">${escapeHtml(second.type)}</span>
-          </span>
+          </div>
         </div>
-        <div class="after-next-right">
+        <div class="countdown-display">
           <span class="countdown-prefix">あと</span>
           <span class="after-countdown-number">${second.diffMinutes}</span>
           <span class="countdown-unit">分</span>
@@ -722,7 +722,6 @@ function renderMainCountdown(now = new Date()) {
           <span class="direction-name">${escapeHtml(cleanDirName)}</span>
           <span class="direction-suffix">方面</span>
         </div>
-        <span class="dia-inline-pill">${escapeHtml(diaInfo.shortLabel)}（自動認識）</span>
       </div>
       ${firstHtml}
       ${secondHtml}
